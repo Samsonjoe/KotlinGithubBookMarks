@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
@@ -12,7 +13,8 @@ import com.google.android.material.navigation.NavigationView
 import com.kotlin.kotlingithubbookmarks.R
 import com.kotlin.kotlingithubbookmarks.adapters.DisplayAdapter
 import com.kotlin.kotlingithubbookmarks.app.Constants
-import com.kotlin.kotlingithubbookmarks.app.Util
+import com.kotlin.kotlingithubbookmarks.app.showErrorMessage
+import com.kotlin.kotlingithubbookmarks.app.toast
 import com.kotlin.kotlingithubbookmarks.models.Repository
 import com.kotlin.kotlingithubbookmarks.models.SearchResponse
 import com.kotlin.kotlingithubbookmarks.retrofit.GithubAPIService
@@ -33,16 +35,15 @@ class DisplayActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     private var browsedRepositories: List<Repository> = mutableListOf()
 
     private val githubAPIService: GithubAPIService by lazy {
-        RetrofitClient.getGithubAPIService()
+        RetrofitClient.githubAPIService
     }
-    private var mRealm: Realm? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_display)
 
         setSupportActionBar(toolbar)
-        supportActionBar!!.title = "Showing Browsed Results"
+        supportActionBar!!.title = "Showing Browsed Results" //Showing Browsed Results
 
         setAppUsername()
 
@@ -50,9 +51,6 @@ class DisplayActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         layoutManager.orientation = LinearLayoutManager.VERTICAL
         recyclerView.layoutManager = layoutManager
 
-
-        Realm.init(this)
-        mRealm = Realm.getDefaultInstance()
 
         navigationView.setNavigationItemSelectedListener(this)
 
@@ -101,17 +99,17 @@ class DisplayActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                     if (browsedRepositories.isNotEmpty()) {
                         setupRecyclerView(browsedRepositories)
                     } else {
-                        Util.showMessage(this@DisplayActivity, "No Items Found")
+                        toast( "No Items Found")
                     }
 
                 } else {
                     Log.i(TAG, "Error " + response)
-                    Util.showErrorMessage(this@DisplayActivity, response.errorBody()!!)
+                    showErrorMessage(response.errorBody()!!)
                 }
             }
 
             override fun onFailure(call: Call<List<Repository>>?, t: Throwable) {
-                Util.showMessage(this@DisplayActivity, t.message)
+                toast( t.message ?: "Error Fetching Results")
             }
         })
     }
@@ -140,16 +138,15 @@ class DisplayActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                     if (browsedRepositories.isNotEmpty())
                         setupRecyclerView(browsedRepositories)
                     else
-                        Util.showMessage(this@DisplayActivity, "No Items Found"
-                    )
+                        toast("No Items Found")
                 } else {
                     Log.i(TAG, "error $response")
-                    Util.showErrorMessage(this@DisplayActivity, response.errorBody())
+                    showErrorMessage(response.errorBody()!!)
                 }
             }
 
             override fun onFailure(call: Call<SearchResponse>, t: Throwable) {
-                Util.showMessage(this@DisplayActivity, t.toString())
+               toast(t.toString())
             }
         })
     }
@@ -160,31 +157,46 @@ class DisplayActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     }
 
     override fun onNavigationItemSelected(menuItem: MenuItem): Boolean {
+
         menuItem.isChecked = true
-        closeDrawer()
+
         when (menuItem.itemId) {
             R.id.item_bookmark -> {
-                showBookmarks()
-                supportActionBar!!.title = "Showing Bookmarks"
+                //consumedMenuEvent({ showBookmarks()},"Showing Bookmarks")
+                consumedMenuEvent({ },"Showing Bookmarks")
             }
-            R.id.item_browsed_results -> {
-                showBrowsedResults()
-                supportActionBar!!.title = "Showing Browsed Results"
+            R.id.item_browsed_results ->  {
+                consumedMenuEvent({ showBrowsedResults() },"Showing Browsed Results" )
             }
         }
         return true
     }
+
+    //Inline Function (accepts function as a parameter) = saves memory over High order function
+    private inline fun consumedMenuEvent(myFun: ()-> Unit, title: String){
+        myFun()
+        closeDrawer()
+        supportActionBar!!.title = title
+    }
+
+    //Higher Order Function (accepts function as a parameter)
+   /* private fun consumedMenuEvent(myFun: ()-> Unit, title: String){
+        myFun()
+        closeDrawer()
+        supportActionBar!!.title = title
+    }*/
 
     private fun showBrowsedResults() {
         displayAdapter.swap(browsedRepositories)
     }
 
     private fun showBookmarks() {
-        mRealm!!.executeTransaction { realm ->
-            val repositories = realm.where(
-                Repository::class.java
-            ).findAll()
-            displayAdapter!!.swap(repositories)
+
+        val realm = Realm.getDefaultInstance()
+
+        realm.executeTransaction { realm ->
+            val bookmarkedRepoList= realm.where(Repository::class.java).findAll()
+            displayAdapter.swap(bookmarkedRepoList)
         }
     }
 
@@ -195,7 +207,6 @@ class DisplayActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     override fun onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) closeDrawer() else {
             super.onBackPressed()
-            mRealm!!.close()
         }
     }
 

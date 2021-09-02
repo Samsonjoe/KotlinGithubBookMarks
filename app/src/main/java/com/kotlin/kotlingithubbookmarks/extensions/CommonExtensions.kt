@@ -1,33 +1,27 @@
-package com.kotlin.kotlingithubbookmarks.app;
+package com.kotlin.kotlingithubbookmarks.app
 
+import android.app.Activity
+import android.content.Context
+import android.util.Log
+import okhttp3.ResponseBody
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.kotlin.kotlingithubbookmarks.models.ErrorResponse
+import android.widget.Toast
+import java.io.IOException
+import java.time.Duration
 
-import android.content.Context;
-import android.util.Log;
-import android.widget.Toast;
+fun Context.showErrorMessage(errorBody: ResponseBody, duration: Int = Toast.LENGTH_SHORT) {
+    val gson = GsonBuilder().create()
+    try {
+        val errorResponse = gson.fromJson(errorBody.string(), ErrorResponse::class.java)
+        toast(errorResponse.message!!,duration)
+    } catch (e: IOException) {
+        Log.i("Exception ", e.toString())
+    }
+}
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.kotlin.kotlingithubbookmarks.models.ErrorResponse;
+fun Context.toast(msg: String, duration: Int = Toast.LENGTH_SHORT) {
+    Toast.makeText(this, msg, duration).show()
 
-import java.io.IOException;
-
-import okhttp3.ResponseBody;
-
-public class Util {
-
-	public static void showErrorMessage(Context context, ResponseBody errorBody) {
-
-		Gson gson = new GsonBuilder().create();
-		ErrorResponse errorResponse;
-		try {
-			errorResponse = gson.fromJson(errorBody.string(), ErrorResponse.class);
-			showMessage(context, errorResponse.getMessage());
-		} catch (IOException e) {
-			Log.i("Exception ", e.toString());
-		}
-	}
-
-	public static void showMessage(Context context, String msg) {
-		Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
-	}
 }

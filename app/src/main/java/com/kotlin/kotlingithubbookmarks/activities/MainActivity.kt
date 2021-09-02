@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.textfield.TextInputLayout
 import com.kotlin.kotlingithubbookmarks.R
 import com.kotlin.kotlingithubbookmarks.app.Constants
+import com.kotlin.kotlingithubbookmarks.app.isNotEmpty
 import kotlinx.android.synthetic.main.activity_display.*
 
 import kotlinx.android.synthetic.main.activity_main.*
@@ -41,7 +42,7 @@ class MainActivity : AppCompatActivity() {
     /** save app username in SharedPreferences */
     fun saveName (view: View ) {
 
-        if (isNotEmpty(etName,inputLayoutName)) {
+        if (etName.isNotEmpty(inputLayoutName)) {
             val personName = etName.text.toString()
             val sp = getSharedPreferences(Constants.APP_SHARED_PREFERENCES, Context.MODE_PRIVATE)
             val editor = sp.edit()
@@ -53,7 +54,7 @@ class MainActivity : AppCompatActivity() {
     /** Search repositories on github after passing data to DisplayActivity */
     fun listRepositories(view: View){
 
-        if (isNotEmpty(etRepoName,inputLayoutRepoName)){
+        if (etRepoName.isNotEmpty(inputLayoutRepoName)){
             val queryRepo = etRepoName.text.toString()
             val repoLanguage = etLanguage.text.toString()
 
@@ -68,24 +69,13 @@ class MainActivity : AppCompatActivity() {
     /**Search repositories of a particular github user after passing data to DisplayActivity */
     fun listUserRepositories(view: View){
 
-        if (isNotEmpty(etGithubUser,inputLayoutGithubUser)) {
+        if (etGithubUser.isNotEmpty(inputLayoutGithubUser)) {
             val githubUser = etGithubUser.text.toString()
 
             val intent = Intent(this, DisplayActivity::class.java)
             intent.putExtra(Constants.KEY_QUERY_TYPE, Constants.SEARCH_BY_USER)
             intent.putExtra(Constants.KEY_GITHUB_USER, githubUser)
             startActivity(intent)
-        }
-    }
-
-    fun isNotEmpty(editText: EditText, textInputLayout: TextInputLayout):Boolean {
-
-        if (editText.text.toString().isEmpty()){
-            textInputLayout.error = "Cannot be blank !"
-            return false
-        } else{
-            textInputLayout.isErrorEnabled = false
-            return true
         }
     }
 
